@@ -1,0 +1,197 @@
+# Disclaimer
+This file is a work in progress. Its my first time deploying the template, and I haven't finished yet, therefore there might be errors in it.
+
+# About the structure of the project 
+docker-compose.override.yml is used used only for local development - local deployment. 
+For example, the directory with the backend code is mounted as a Docker "host volume", mapping the code you change live to the directory inside the container. That allows you to test your changes right away, without having to build the Docker image again.
+
+# Intro
+
+This project is based on https://github.com/tiangolo/full-stack-fastapi-template
+
+Steps to build a project like this one:
+1. Install copier locally if not installed:
+``` pip install copier ```
+
+2. Create a folder for your project
+
+3. Open a command line in the folder that contains your project folder
+
+4. Use copier to copy the template: 
+``` python -m copier copier copy https://github.com/tiangolo/full-stack-fastapi-template ProjectFolderName --trust ```
+
+5. Fill the form
+- To generate a secret use ``` python -c "import secrets; print(secrets.token_urlsafe(32))" ``` in a bash command line
+- For the super user name i used my own, not sure if its a great idea.
+- For the password you can generate it with the same command, possibly with a different length ``` python -c "import secrets; print(secrets.token_urlsafe(20))" ```
+- for the SMTP server you can use the one for your mail provider. For example: smtp.gmail.com
+- for the user you can use your mail, for example: your.mail@gmail.com
+- for the password its the password you use for your mail.
+- for the user to send mails from, i guess its your mail again: your.mail@gmail.com
+- Also generate the password for posgre: python -c "import secrets; print(secrets.token_urlsafe(32))"
+- Sentry is not necesary, so just hit enter
+
+6. Your project should contain everythng it needs to work, but **BE CAREFUL NOT TO push your .env to source control!!!** You probably need to gitignore it, I dont have a clue why they didnt make copier ignore it by default. Also, gitignoreing it you will need to discard the tracking from the file, which i dont remember how to do from memory, i will add it later.
+
+7. Lets make sure the project is working locally first. Run docker engine, for example by running docker desktop, then run ```docker compose up -d ```, check that http://localhost and http://localhost/docs are working. We have the traefik container up and running, hurray! 
+
+8. Ok, now we need to deploy it. I'll be deploying in a virtual machine, for simplicity(its easy to just install and use docker compose) and flexibility (you can use a vm in any cloud, or even a physical server).
+
+To be specific I'll deploy on GCP, which has a VM on the only free tier. With my current setup and the current free tier limitations we only need to pay for the static ip (~0.3 usd/month), to connect it with your domain, and for your domain. It should be possible to skip paying for the static ip, and even for the domain, but I didn't want to have to modify the project too much, and its not designed for that.
+
+To create a vm on gcp, first create a gcp account, go to console, then create a project, and then go to google compute engine, activate the api, and click on create instance.
+
+You need to configure some things. While all my settings except possibly static ip were free at the time, be sure to keep a mind on costs, setup budget alerts and check https://cloud.google.com/free/docs/free-cloud-features#compute  .
+These are the settings you need:
+- Set the name to a name you want, for example portfolio-compute-instance
+- Set the region to a region in the free tier, for example right now its us-central1 (Iowa)
+- Activate the e2 micro preset
+- Skip the container setting, its for when you use a container optimiezed os, which has a different setup since its meant to run a single container. 
+- Boot disk: Use Debian linux 12, Choose standard persitent disk, since its in free tier and cheaper, though i believe the other may be too since i wasnt charged for it. 
+- Firewall: allow http and https traffic 
+- Advanced options > networking > networking interfaces settings: **FIRST change your network service tier to standard** then click on external ipv4 and reserve a static external ip address, since to add a domain it will be necessary. Select a name for example: portfolio-vm-external-static-ipv4
+
+10. Now you have a working vm, and you need a domain so people can access to your vm by url instead of ip. Additionally it is needed to not need to modify the project and be able to follow this instructions as is.
+
+First, get the external ip of your vm, it'll be available on the table on https://console.cloud.google.com/compute/instances?onCreate=true&project=your-projectname
+
+Now get a domain:
+I suggest you get a domain like lastname.me . You can buy it at any DNS registrar, but I used porkbun, and I suggest you do the same, its cheap, has good support, and gives some features that are usually paid for for free.
+
+After buying your domain, we need to create some DNS records to redirect traffic from your domain to the vm. Go to settings on your DNS registrar page, in porkbun they are on https://porkbun.com/account/domainsSpeedy on the dns label under your domain:
+![DNS settings porkbun](img/dns-settings.png)
+
+You need 2 records:
+- An A (address) record with your domain host pointing to the Public IP of your vm.
+- A cname record with all subdomains as source (*) and your domain as target.
+
+On porkbun there are 2 default records, scroll to the bottom of the page to find them and mofiying, they should look like this but with your domain and ip. Dont forget to hit the sabe button nex tto each record.
+![Porkbun DNS Records](img/dns-records.png)
+
+Now, your domain will still not be working, since your vm is not doing anything, and since the DNS server doesn't instantaniously update. TTL is the time till update (max), in porkbun its 600s minimun (10 minutes), but on your dns server it may be longer.
+
+Anyhow, your domain should update eventually, so don't worry about it for now, lets hop back to the vm.
+
+9. Now that you have your domain, and your vm is created, we need to configure the vm to actually do something. We'll mostly follow the project's [deployment guide](https://github.com/tiangolo/full-stack-fastapi-template/blob/master/deployment.md) but not exactly since it doesn't work as is.
+
+11. First get the Now we need to get into the command line of the vm to run some commands. Go to vm instances if not there already, and click on ssh.
+![VM instances SSH GCP](img/gcp-vm-ssh)
+
+You may be asked to create a passphrase. If so, do so, save it somewhere safe along with the results of the command. You might need it in the future.
+
+You can run ```echo hello world``` to make sure the cmdline is working.
+
+12. Now that you are in the command line you will need to install docker & docker compose before running anything. To do so we'll follow the official docker instructions. If following my guide, we'll use the[ones for debian.] (https://docs.docker.com/engine/install/debian/#install-using-the-repository):
+Copy and paste this to the terminal:
+```bash
+# Add Docker's official GPG key:
+sudo apt-get update
+sudo apt-get install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# Add the repository to Apt sources:
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+```
+And then this:
+```bash
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
+Type Y and enter when prompted to do so.
+
+Its not necessary, but you can run ```sudo docker run hello-world``` to verify everything is working. Then to cleanup ```sudo docker ls --all``` to find the id of the hello world container and then ```sudo docker rm theid``` to remove the hellow world container you installed. 
+
+13. Now we need to upload the docker compose traefik file and run some more commands to start the traefik proxy. 
+Since the default guide uses prievilieged folders, we;; need to run many commands using sudo, since they are configured to place files on privilieged folders such as root which we cant access otherwise.
+
+First create the target directory:
+Run: ```sudo mkdir -p /root/code/traefik-public/```
+You will not get any messages after creating the directory, its normal, dont worry.
+
+Then upload docker-compose.traefik:
+Instead of running rsync, upload the file by using the upload file button on the top right corner of the console, and clicking upload. 
+You will only be able to upload to home apparently, so just upload it and then move it by running: ```sudo mv docker-compose.traefik.yml /root/code/traefik-public/ ```
+Alternatively I think you can upload the file with rsync, using the external ip listed in the vms table instead of the domain name on the conneciton.
+
+Now create the traefik public network since the compose files use it:
+```sudo docker network create traefik-public```
+
+And set the enviromental variables for traefik:
+**Change username, password, domain, and email and copy paste this:**
+```bash
+export USERNAME=changethis
+export PASSWORD=changethis
+export HASHED_PASSWORD=$(openssl passwd -apr1 $PASSWORD)
+export DOMAIN=change.this.com
+export EMAIL=change@this.com
+```
+
+**Save the details somewhere safe**
+Now we need to start the traefik docker compose, but to do so we need to run the command in /root/code/traefik-public/ . To achieve it run this:
+``` sudo -E sh -c 'cd /root/code/traefik-public/ && docker compose -f docker-compose.traefik.yml up -d' ```
+We use the -E flag to make sure that sudo takes into account the existing enviromental variables.
+
+You should get a message that your traefik container is now running.
+
+
+This might be helpful reference if i run into problems there: https://youtu.be/CSQTnZEoC1o?si=7BKwG4XHNO8Y-RqE&t=846
+
+14. Now that the traefik proxy is up, we need to run our project (backend, frontend, database, etc).
+Again, we'll mostly follow the instructions in the [official guide](https://github.com/tiangolo/full-stack-fastapi-template/blob/master/deployment.md#deploy-the-fastapi-project), but with some caveats.
+
+We  need to prepare the enviromental variables to copy paste. Before that we could try to configure env variablles [the enviromental variables required for github actions](https://github.com/tiangolo/full-stack-fastapi-template/blob/master/deployment.md#github-actions-environment-variables) but i get the feeling that excluiding smokeshow which just shows code coverage, the tempalte should work without configuring them, so I'll skip setting:
+- LATEST_CHANGES is the enviromental variable for last changes github token, but I believe this is the default value is  ${{ secrets.GITHUB_TOKEN }} which should work because of https://docs.github.com/en/actions/security-guides/automatic-token-authentication
+- SMOKESHOW_AUTH_KEY Used to handle and publish the code coverage using Smokeshow, follow their instructions to create a (free) Smokeshow key. Ill skip since it likely should work without it.
+
+Now prepare the variables for copy pase. Some of them you should obtain from your .env file which was created by copier on the project folder.
+```bash
+#General
+export ENVIRONMENT=production
+export DOMAIN=yourlastname.me
+export PROJECT_NAME=obtain-from-.env
+export STACK_NAME=production-your_project_name-stack
+#This may be and likely is totally wrong TODO CHANGE:
+export BACKEND_CORS_ORIGINS="http://localhost,http://localhost:5173,https://localhost,https://localhost:5173,http://localhost.tiangolo.com"
+export SECRET_KEY=obtain-from-.env
+export FIRST_SUPERUSER=obtain-from-.env
+export FIRST_SUPERUSER_PASSWORD=obtain-from-.env
+#Lets not allow new users registration as of yet
+export USERS_OPEN_REGISTRATION=False
+
+# Emails
+export SMTP_HOST=obtain-from-.env
+export SMTP_USER=obtain-from-.env
+export SMTP_PASSWORD=obtain-from-.env
+export EMAILS_FROM_EMAIL=obtain-from-.env
+
+# Postgres
+export POSTGRES_SERVER=obtain-from-.env
+export POSTGRES_PORT=obtain-from-.env
+export POSTGRES_DB=obtain-from-.env
+export POSTGRES_USER=obtain-from-.env
+export POSTGRES_PASSWORD=obtain-from-.env
+```
+
+Ok, now we have the enviromental variables set, so if we uploaded and ran our project with ```docker compose -f docker-compose.yml up -d```. It'd be nice to do so and test the project, but unfortunately the instructions skip it so we will too.
+
+Instead lets set things up so they are automatically deployed instead! Not bad huh?
+Again, we'll follow [the guide](https://github.com/tiangolo/full-stack-fastapi-template/blob/master/deployment.md#continuous-deployment-cd), but with some modifications:
+```bash
+# add the user with useradd instead of adduser, use sudo or the command wont be found
+sudo useradd -m github
+
+# Add Docker permissions to the github user, use sudo or the command wont be found
+sudo usermod -aG docker github
+
+# Change to the github user, use sudo or it will ask for a password that i dont know where to find.
+sudo su - github
+
+# change to the base directory of github user
+cd
+```
+
