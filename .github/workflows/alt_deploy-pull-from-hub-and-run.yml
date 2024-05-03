@@ -9,9 +9,15 @@ jobs:
     steps:
       - name: Login to DockerHub
         run: docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+        
+        #used to check out your repository under $GITHUB_WORKSPACE so your workflow can access it1.
+        #It allows your workflow to interact with your code.
+        #Without this step, the GitHub Actions runner would not know about the code you want to build
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Pull Docker image
-        run: docker pull ${{ secrets.DOCKERHUB_TOKEN }}:latest
-
-      - name: Run Docker image
-        run: docker run -d ${{ secrets.DOCKERHUB_TOKEN }}:latest
+      - name: Pull and Run Docker Compose
+        run: |
+          docker pull ${{ secrets.DOCKERHUB_REPOSITORY }}/backend:${{ github.sha }}
+          docker pull ${{ secrets.DOCKERHUB_REPOSITORY }}/frontend:${{ github.sha }}
+          docker compose up -d

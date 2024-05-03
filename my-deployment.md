@@ -196,6 +196,8 @@ sudo su - github
 cd
 ```
 
+Now we need to do some things on your github repository. Make sure to create a github repository for the project, and locally add it as a remote to push to. You can do it very simply on vs code by using the git symbol on and then push to, add remote.
+
 Now you need to go to your repo settings (on actions, runners, linux, x64) and copy paste the commands to create a github runner, which you can host on the vm.
 https://github.com/your-user/your-repo/settings/actions/runners/new?arch=x64&os=linux
 
@@ -241,7 +243,7 @@ Also create a repository on dockerhub for this project, and create a secret with
 
 Ok, now download from this repository/.github the workflows starting with alt_ . They are the alternative workflows with the process i described.
 
-Commit and push the workflows. Make sure NOT to push .env
+Commit and push the workflows to the correct remote. Make sure NOT to push .env
 
 You can see that on the workflows that ran with your CI/CD at https://github.com/youruser/yourrepo/actions
 

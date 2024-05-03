@@ -13,6 +13,9 @@ jobs:
   build_and_push:
     runs-on: ubuntu-latest
     steps:
+        #used to check out your repository under $GITHUB_WORKSPACE so your workflow can access it1.
+        #It allows your workflow to interact with your code.
+        #Without this step, the GitHub Actions runner would not know about the code you want to build
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -22,9 +25,14 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+        #May not be necessary
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
       - name: Build and push Docker image
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          push: true
-          tags: ${{ secrets.DOCKERHUB_REPOSITORY }}:latest
+        run: |
+            docker build -t ${{ secrets.DOCKERHUB_REPOSITORY }}/backend:${{ github.sha }} ./backend
+            docker build -t ${{ secrets.DOCKERHUB_REPOSITORY }}/frontend:${{ github.sha }} ./frontend
+            docker push ${{ secrets.DOCKERHUB_REPOSITORY }}/backend:${{ github.sha }}
+            docker push ${{ secrets.DOCKERHUB_REPOSITORY }}/frontend:${{ github.sha }}
+        #instead of the github sha we could use latest in both files.
