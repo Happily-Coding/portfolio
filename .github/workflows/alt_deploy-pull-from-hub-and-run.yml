@@ -1,4 +1,4 @@
-name: Pull Docker Image from hub and Runo n vm.
+name: Pull Docker Image from hub and Run on vm.
 
 on:
   workflow_dispatch:
@@ -11,7 +11,7 @@ jobs:
         run: docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Pull Docker image
-        run: docker pull your-dockerhub-username/your-image-name:latest
+        run: docker pull ${{ secrets.DOCKERHUB_TOKEN }}:latest
 
       - name: Run Docker image
-        run: docker run -d your-dockerhub-username/your-image-name:latest
+        run: docker run -d ${{ secrets.DOCKERHUB_TOKEN }}:latest

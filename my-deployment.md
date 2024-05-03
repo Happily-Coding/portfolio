@@ -236,6 +236,21 @@ Instead of giving the password to our vm and github workflow, [create a docker h
 - DOCKERHUB_USERNAME
 - DOCKERHUB_TOKEN
 
+Also create a repository on dockerhub for this project, and create a secret with its path, for example youruser/portfolio
+- DOCKERHUB REPOSITORY
+
 Ok, now download from this repository/.github the workflows starting with alt_ . They are the alternative workflows with the process i described.
 
 Commit and push the workflows. Make sure NOT to push .env
+
+You can see that on the workflows that ran with your CI/CD at https://github.com/youruser/yourrepo/actions
+
+Our current github actions settings will run the following workflows on commit:
+- Test
+- Deploy to staging 
+- Smokeshow
+Keep in mind they may not be instantaniously ran, but instead queued.
+
+Creating a new release on github will run the following workflows:
+- Deploy to Production
+- Build and push to docker hub.
