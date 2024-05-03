@@ -181,6 +181,7 @@ Ok, now we have the enviromental variables set, so if we uploaded and ran our pr
 
 Instead lets set things up so they are automatically deployed instead! Not bad huh?
 Again, we'll follow [the guide](https://github.com/tiangolo/full-stack-fastapi-template/blob/master/deployment.md#continuous-deployment-cd), but with some modifications:
+First execute these commands:
 ```bash
 # add the user with useradd instead of adduser, use sudo or the command wont be found
 sudo useradd -m github
@@ -195,3 +196,46 @@ sudo su - github
 cd
 ```
 
+Now you need to go to your repo settings (on actions, runners, linux, x64) and copy paste the commands to create a github runner, which you can host on the vm.
+https://github.com/your-user/your-repo/settings/actions/runners/new?arch=x64&os=linux
+
+Feel free to use the default settings whenever pronted to do so, but you may want to add a label for production, and may want to skip the actual running.
+
+The runner is almost operational, but we need to make it run as a service so its never offline.
+Go back to the vm. Run ```exit``` to go back to the root user. 
+
+run:
+```bash
+cd /home/github/actions-runner
+sudo ./svc.sh install github
+sudo ./svc.sh start
+```
+
+Now we also need to configure the secrets in the github repository:
+Go to 
+https://github.com/your_user/your_project/settings/secrets/actions
+And add as repository secrets the environmental variables you had set for: 
+- DOMAIN_PRODUCTION (just used the domain here and in staging)
+- DOMAIN_STAGING
+- STACK_NAME_PRODUCTION (used the stack name id configured for production, and the same with stagging ending instead of production for the next variable)
+- STACK_NAME_STAGING
+- EMAILS_FROM_EMAIL
+- FIRST_SUPERUSER
+- FIRST_SUPERUSER_PASSWORD
+- POSTGRES_PASSWORD
+- SECRET_KEY
+- LATEST_CHANGES (i added just initial commit as value dont know if its ok)
+- SMOKESHOW_AUTH_KEY (i skipped it for now)
+
+Ok, so if you have a powerful vm, your CI setup is finished. But if you've been following my tutorial, that is not the case. E2 micro vm does not have enough processing power for the actions created by tiangolo to work, since it tries to build the docker image on the VM, and that will fail with our processing power.
+
+Instead we'll build our docker image with github actions, and push it to docker hub, and then pull it from docker hub on our vm. That way the build process takes place outside the vm.
+
+To achieve it first we need to create some more github secrets, so that github and our vm can connect to docker hub.
+Instead of giving the password to our vm and github workflow, [create a docker hub token, like explained here](https://docs.docker.com/security/for-developers/access-tokens/). Then add the username and token returned as github secrets with these names:
+- DOCKERHUB_USERNAME
+- DOCKERHUB_TOKEN
+
+Ok, now download from this repository/.github the workflows starting with alt_ . They are the alternative workflows with the process i described.
+
+Commit and push the workflows. Make sure NOT to push .env

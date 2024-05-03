@@ -1,0 +1,30 @@
+# The first step of the alternative deploy pipeline
+# Instead of building and running on the vm, it builds on github actions
+# And then only copies the image to the vm
+# Its meant to diminish the workload on the vm which was generating timeout errors.
+name: Build and Push to Docker Hub workflow.
+
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          tags: your-dockerhub-username/your-image-name:latest
