@@ -32,9 +32,9 @@ jobs:
       - name: Build and push Docker image
         run: |
             echo ${{ vars.DOCKERHUB_REPOSITORY }}
-            docker build -t ${{ vars.DOCKERHUB_REPOSITORY }}/backend:${{ github.sha }} ./backend
-            docker build -t ${{ vars.DOCKERHUB_REPOSITORY }}/frontend:${{ github.sha }} ./frontend
-            echo ${{ vars.DOCKERHUB_REPOSITORY }}/backend:${{ github.sha }}
-            docker push ${{ vars.DOCKERHUB_REPOSITORY }}/backend:${{ github.sha }}
-            docker push ${{ vars.DOCKERHUB_REPOSITORY }}/frontend:${{ github.sha }}
+            docker build -t ${{ vars.DOCKERHUB_REPOSITORY }}:backend_${{ github.sha }} ./backend
+            docker build -t ${{ vars.DOCKERHUB_REPOSITORY }}:frontend_${{ github.sha }} ./frontend
+            echo ${{ vars.DOCKERHUB_REPOSITORY }}:backend_${{ github.sha }}
+            docker push ${{ vars.DOCKERHUB_REPOSITORY }}:backend_${{ github.sha }}
+            docker push ${{ vars.DOCKERHUB_REPOSITORY }}:frontend_${{ github.sha }}
         #instead of the github sha we could use latest in both files.
