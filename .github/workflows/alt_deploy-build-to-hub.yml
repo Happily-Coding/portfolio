@@ -25,9 +25,6 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-        #May not be necessary. Even if it is might wanna update it (TODO)
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
 
       - name: Build and push Docker image
         # build and push to the dockerhub  your_name/backend_repo_name or frontend_repo_name:github.sha which reflects the commit.
