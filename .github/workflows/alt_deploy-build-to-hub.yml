@@ -25,16 +25,15 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-        #May not be necessary
+        #May not be necessary. Even if it is might wanna update it (TODO)
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
       - name: Build and push Docker image
+        # build and push to the dockerhub  your_name/backend_repo_name or frontend_repo_name:github.sha which reflects the commit.
         run: |
-            echo ${{ vars.DOCKERHUB_REPOSITORY }}
-            docker build -t ${{ vars.DOCKERHUB_REPOSITORY }}:backend_${{ github.sha }} ./backend
-            docker build -t ${{ vars.DOCKERHUB_REPOSITORY }}:frontend_${{ github.sha }} ./frontend
-            echo ${{ vars.DOCKERHUB_REPOSITORY }}:backend_${{ github.sha }}
-            docker push ${{ vars.DOCKERHUB_REPOSITORY }}:backend_${{ github.sha }}
-            docker push ${{ vars.DOCKERHUB_REPOSITORY }}:frontend_${{ github.sha }}
-        #instead of the github sha we could use latest in both files.
+            docker build -t ${{ vars.DOCKERHUB_REPOSITORY_BACKEND }}:${{ github.sha }} ./backend
+            docker build -t ${{ vars.DOCKERHUB_REPOSITORY_FRONTEND }}:${{ github.sha }} ./frontend
+            docker push ${{ vars.DOCKERHUB_REPOSITORY_BACKEND }}:${{ github.sha }}
+            docker push ${{ vars.DOCKERHUB_REPOSITORY_FRONTEND }}:${{ github.sha }}
+

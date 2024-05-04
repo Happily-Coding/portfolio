@@ -18,6 +18,6 @@ jobs:
 
       - name: Pull and Run Docker Compose
         run: |
-          docker pull ${{ secrets.DOCKERHUB_REPOSITORY }}/backend:${{ github.sha }}
-          docker pull ${{ secrets.DOCKERHUB_REPOSITORY }}/frontend:${{ github.sha }}
+          docker pull ${{ vars.DOCKERHUB_REPOSITORY_BACKEND }}:${{ github.sha }}
+          docker pull ${{ vars.DOCKERHUB_REPOSITORY_FRONTEND }}:${{ github.sha }}
           docker compose up -d
