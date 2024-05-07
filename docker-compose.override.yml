@@ -61,7 +61,16 @@ services:
       args:
         INSTALL_DEV: ${INSTALL_DEV-true}
     # command: sleep infinity  # Infinite loop to keep container alive doing nothing
-    command: /start-reload.sh
+    #command: /start-reload.sh
+    #command: ["poetry", "show"]
+    #     "poetry config --list;
+          #poetry show -v;
+    command: ["bash", "-c",
+      "exec /start-reload.sh"]
+      #echo venv path is:;
+      #poetry env info --path;
+      # echo activating poetry path.;
+      #     source $(poetry env info --path)/bin/activate;
 
   frontend:
     restart: "no"
