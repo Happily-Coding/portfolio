@@ -316,7 +316,7 @@ Also create a repository on dockerhub for the backend of this project, and anoth
 
 Ok, now download from this repository/.github the workflows starting with alt_ . They are the alternative workflows with the process i described.
 
-Commit and push the workflows to the correct remote. Make sure NOT to push .env
+Commit and push the workflows to the correct remote.** Make sure NOT to push .env and .copier-answers.yml . It will leak security information if your repo is public!**
 
 You can see that on the workflows that ran with your CI/CD at https://github.com/youruser/yourrepo/actions
 
