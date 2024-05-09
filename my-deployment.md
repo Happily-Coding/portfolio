@@ -47,7 +47,7 @@ These are the settings you need:
 - Set the region to a region in the free tier, for example right now its us-central1 (Iowa)
 - Activate the e2 micro preset
 - Skip the container setting, its for when you use a container optimiezed os, which has a different setup since its meant to run a single container. 
-- Boot disk: Use Debian linux 12, Choose standard persitent disk, since its in free tier and cheaper, though i believe the other may be too since i wasnt charged for it. 
+- Boot disk: Use Debian linux 12, Choose standard persitent disk, since its in free tier and cheaper, though i believe the other may be too since i wasnt charged for it. make sure to go for 30gb. 10gb wont be enough, and it should still be free.
 - Firewall: allow http and https traffic 
 - Advanced options > networking > networking interfaces settings: **FIRST change your network service tier to standard** then click on external ipv4 and reserve a static external ip address, since to add a domain it will be necessary. Select a name for example: portfolio-vm-external-static-ipv4
 
@@ -117,6 +117,9 @@ Then upload docker-compose.traefik:
 Instead of running rsync, upload the file by using the upload file button on the top right corner of the console, and clicking upload. 
 You will only be able to upload to home apparently, so just upload it and then move it by running: ```sudo mv docker-compose.traefik.yml /root/code/traefik-public/ ```
 Alternatively I think you can upload the file with rsync, using the external ip listed in the vms table instead of the domain name on the conneciton.
+Alternatively click on the arrow next to ssh open cloud command and run it in the console and upload on the right. You might be asked to create a passphrase or enter it. if you were asked to create make sure to save it somewhere safe.
+Keep in mind that if you close the terminal at some point without having moved the file it might disappear/ no longer be listed.
+
 
 Now create the traefik public network since the compose files use it:
 ```sudo docker network create traefik-public```
@@ -130,14 +133,13 @@ export HASHED_PASSWORD=$(openssl passwd -apr1 $PASSWORD)
 export DOMAIN=change.this.com
 export EMAIL=change@this.com
 ```
+**Save the details somewhere safe.** 
 
-**Save the details somewhere safe**
 Now we need to start the traefik docker compose, but to do so we need to run the command in /root/code/traefik-public/ . To achieve it run this:
 ``` sudo -E sh -c 'cd /root/code/traefik-public/ && docker compose -f docker-compose.traefik.yml up -d' ```
 We use the -E flag to make sure that sudo takes into account the existing enviromental variables.
 
 You should get a message that your traefik container is now running.
-
 
 This might be helpful reference if i run into problems there: https://youtu.be/CSQTnZEoC1o?si=7BKwG4XHNO8Y-RqE&t=846
 
@@ -179,7 +181,76 @@ export POSTGRES_PASSWORD=obtain-from-.env
 
 Ok, now we have the enviromental variables set, so if we uploaded and ran our project with ```docker compose -f docker-compose.yml up -d```. It'd be nice to do so and test the project, but unfortunately the instructions skip it so we will too.
 
-Instead lets set things up so they are automatically deployed instead! Not bad huh?
+**Usually, now we'd setup CI/CD, but the chances of it going wrong arent very slim, so lets first make sure our container runs properly.**
+first make sure to build your backend and frontend.
+Look for your repository variables, or the name of your repository on docker hub. it should look something like this: your_docker_hub_name/your_project_name-backend . build the images, using those :latest
+It might seem irrelevant but make sure to use latest as tag, since thats what the docker compose file will look for.
+docker build -t your_docker_hub_name/your_project_name-backend-backend:latest ./backend
+docker build -t your_docker_hub_name/your_project_name-backend-frontend:latest ./frontend
+docker push your_docker_hub_name/your_project_name-backend-backend:latest
+docker push your_docker_hub_name/your_project_name-backend-frontend:latest
+
+create a personal access token with read access, and run
+docker login -u yourusername
+paste personal access token and press enter
+
+sudo docker pull your_docker_hub_name/your_project_name-backend-backend:latest
+sudo docker pull your_docker_hub_name/your_project_name-backend-frontend:latest
+
+Set the additional enviromental variables normally passed by github actions:
+```bash
+# Additional vars for manual deployment
+export DOCKER_IMAGE_BACKEND=your_docker_hub_name/your_project_name-backend
+export DOCKER_IMAGE_FRONTEND=your_docker_hub_name/your_project_name-frontend
+#please note that we dont include latest as the tag, as the docker compose file automatically looks for latest tag, and otherwise would look for your_docker_hub_name/your_project_name-backend-backend:latest:latest and fail .
+```
+
+upload the docker compose file. using upload file.
+``` sudo mkdir -p /root/code/project-compose/ ```
+``` sudo mv docker-compose.yml /root/code/project-compose/ ```
+``` sudo -E sh -c 'cd /root/code/project-compose/ && docker compose -f docker-compose.yml up -d' ```
+
+If you try to run docker-compose.yml you'll notice that it requests a .env file.
+To be frank most if not all of the environmental variables are already setup, so im not really sure its necessary from a functional standpoint. But for simplicity's sake, upload the .env file generated by copier, just make sure that all the variables are in line with what you want as environmental variables and have exported as env variables.
+If you are wondering wether you could've just uploaded that file, without setting any env variables, I believe the answer may be no, because some env variables are used on docker-compose.yml itself, and as such might not be loaded in time, but its just my hypothesis.
+
+upload the .env file
+Move it to the right place:
+``` sudo mv .env /root/code/project-compose/ ```
+sudo mv .env /root/code/project-compose/
+
+If you get these errors:
+unable to prepare context: path "/root/code/project-compose/frontend" not found
+unable to prepare context: path "/root/code/project-compose/backend" not found
+Use:
+sudo mkdir -p /root/code/project-compose/frontend
+sudo mkdir -p /root/code/project-compose/backend
+But you shouldnt get those erors I believe since i think they should only appear on build stage which should never happen on the vm. Specifically, the build would still fail if the build stage tried to run on the container since it doesnt have the source, and therefore context would complain that there is no docker file.
+
+Ok, now the project should succesfully run, not bad huh :D?
+
+Now you can go to your domain. It should show you the typical login page.
+
+You can see the logs of your docker compose app by running:
+sudo -E sh -c 'cd /root/code/project-compose/ && docker compose -f docker-compose.yml logs'
+
+You can see the currently running containers and their status by running:
+sudo -E sh -c 'cd /root/code/project-compose/ && docker compose ps'
+
+You can stop the compose by running:
+sudo -E sh -c 'cd /root/code/project-compose/ && docker compose -f docker-compose.yml down'
+
+You can attach a command line to a container by running:
+```bash
+sudo su # to enter super user mode` 
+`cd /root/code/project-compose/`
+```
+```docker compose attach frontend``` or whatever service name.
+If you need to exit that command line just run exit.
+
+
+
+Now lets set things up so they are automatically deployed instead! Not bad huh?
 Again, we'll follow [the guide](https://github.com/tiangolo/full-stack-fastapi-template/blob/master/deployment.md#continuous-deployment-cd), but with some modifications:
 First execute these commands:
 ```bash
@@ -212,6 +283,7 @@ cd /home/github/actions-runner
 sudo ./svc.sh install github
 sudo ./svc.sh start
 ```
+Now it should be operational, you can check it on github.com/yourname/yourproject/settings/actions/runners
 
 Now we also need to configure the secrets in the github repository:
 Go to 
@@ -238,8 +310,9 @@ Instead of giving the password to our vm and github workflow, [create a docker h
 - DOCKERHUB_USERNAME
 - DOCKERHUB_TOKEN
 
-Also create a repository on dockerhub for this project, and create a secret with its path, for example youruser/portfolio
-- DOCKERHUB REPOSITORY
+Also create a repository on dockerhub for the backend of this project, and another for the frontend, and create a github variable github.com/yourname/portfolio/settings/variables/actions with each path, for example 
+- DOCKERHUB_REPOSITORY_BACKEND yourdockerhubuser/your-repo-backend
+- DOCKERHUB_REPOSITORY_FRONTEND youdockerhubruser/your-repo-frontend
 
 Ok, now download from this repository/.github the workflows starting with alt_ . They are the alternative workflows with the process i described.
 
@@ -256,3 +329,25 @@ Keep in mind they may not be instantaniously ran, but instead queued.
 Creating a new release on github will run the following workflows:
 - Deploy to Production
 - Build and push to docker hub.
+
+
+# Debugging
+# Github workflows are queued/ runner is inactive
+- Sometimes you may notice that your github workflows that depend on your self hosted runner are queued but not actually running.
+- You can check that your runner is correctly running at: github.com/yourusername/yourproject/settings/actions/runners
+- And you may find that status is inactive. This means there is a problem at the vm. You may try to restart the runner, to do so connect via ssh to your vm like we did during the installation, and execute:
+```bash
+cd /home/github/actions-runner
+sudo ./svc.sh start
+```
+- If ssh connection fails, your vm may be not responding
+
+# Workflow fails (TODO expand)
+First go to the workflow logs on github actions, then you can also see: https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/monitoring-and-troubleshooting-self-hosted-runners
+
+You can also disable the workflow temporairly if you need the rest of the workflows to run without issue, but can desactivate that one with no problem. to do so go to actions, workflow name, and click disable, see [this](https://docs.github.com/en/actions/using-workflows/disabling-and-enabling-a-workflow) for more info
+
+# VM not responding
+- A problem during the run of a runner may cause your runnner to become inactive and your vm to stop responding to ssh.
+- If your vm starts responding you can try shutting it down, and starting it again, this may fix the issue. Connect via ssh to verify if it did. Do not forget to restart your runner and your traefik server since they'll both be shutdown.
+
