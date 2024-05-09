@@ -1,0 +1,35 @@
+name: Gather info for configuring github actions properly
+
+on:
+  workflow_dispatch:
+
+jobs:
+  pull_and_run:
+    runs-on: [self-hosted, production]
+    steps:
+      - name: Login to DockerHub
+        run: docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+        
+        #used to check out your repository under $GITHUB_WORKSPACE so your workflow can access it1.
+        #It allows your workflow to interact with your code.
+        #Without this step, the GitHub Actions runner would not know about the code you want to build
+      - name: Download docker-compose.yml
+        uses: actions/download-artifact@v2
+        with:
+          name: docker-compose.yml
+          path: .
+
+      - name: Download docker-compose.yml
+        uses: actions/download-artifact@v2
+        with:
+          name: docker-compose.yml
+          path: .
+
+      - name: Ls R
+        run: ls -R
+
+      - name: LS ..
+        run: ls ..
+
+      - name: Display cwd.
+        run: echo $(pwd)
