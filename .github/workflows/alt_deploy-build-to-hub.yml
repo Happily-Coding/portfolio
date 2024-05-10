@@ -31,6 +31,6 @@ jobs:
         run: |
             docker build -t ${{ vars.DOCKERHUB_REPOSITORY_BACKEND }}:${{ github.sha }} -t ${{ vars.DOCKERHUB_REPOSITORY_BACKEND }}:latest ./backend
             docker build -t ${{ vars.DOCKERHUB_REPOSITORY_FRONTEND }}:${{ github.sha }} -t ${{ vars.DOCKERHUB_REPOSITORY_FRONTEND }}:latest ./frontend
-            docker push ${{ vars.DOCKERHUB_REPOSITORY_BACKEND }}:${{ github.sha }}
-            docker push ${{ vars.DOCKERHUB_REPOSITORY_FRONTEND }}:${{ github.sha }}
+            docker push --all-tags ${{ vars.DOCKERHUB_REPOSITORY_BACKEND }}:${{ github.sha }}
+            docker push --all-tags ${{ vars.DOCKERHUB_REPOSITORY_FRONTEND }}:${{ github.sha }}
 
