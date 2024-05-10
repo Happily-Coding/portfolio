@@ -3,8 +3,12 @@
 # and clean unused docker elements.
 name: pull, run and clean
 
+# Execute this workflow after the image has been sucesfully built. Might wanna first deploy to staging, but currently unimplemented.
 on:
-  workflow_dispatch:
+  workflow_run:
+    workflows: ['build and push to docker hub']
+    types:
+      - completed
 
 jobs:
   pull_and_run:
