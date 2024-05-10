@@ -112,7 +112,7 @@ jobs:
       - name: Run docker compose
         # Try to run docker compose. If an image is missing, error instead of trying to build.
         run: |
-          docker compose up -f docker-compose.yml -d --no-build
+          docker compose -f docker-compose.yml up -d --no-build
 
       - name: Clean up unnecesary docker files
       # This step might seem trivial, or even wasteful, but space used by docker can easily get out of hand and on the cloud its costly.
