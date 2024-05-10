@@ -125,6 +125,16 @@ jobs:
         run: |
           docker compose -f docker-compose.yml ps
           docker compose -f docker-compose.yml logs
+
+      #There seemed to be an issue with the containers, and i think it may be because of missing env variables, issue which was hidden by providing a full .env file
+      - name: Check environment status
+        # Try to run docker compose. If an image is missing, error instead of trying to build.
+        run: |
+          echo $environment
+          export environment production
+          echo $environmennt
+          docker compose -f docker-compose.yml logs
+
       - name: Clean up unnecesary docker files
       # This step might seem trivial, or even wasteful, but space used by docker can easily get out of hand and on the cloud its costly.
       # Feel free to remove it, but i discourage it.
