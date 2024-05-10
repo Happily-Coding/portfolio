@@ -329,6 +329,7 @@ Ok, now download from this repository/.github the workflows starting with alt_ .
 
 Commit and push the workflows to the correct remote.** Make sure NOT to push .env and .copier-answers.yml . It will leak security information if your repo is public!**
 I believe the reason that they might have not gitignored .env is to make it available with the github checkout workflow, but it could be done with actions and github secrets, and in my opinion thats a better approach and what i followed.
+I suggest adding it to .gitignore, and then running git rm -r --cached .env + commit to remove it from git repository but not from your files.
 
 You can see that on the workflows that ran with your CI/CD at https://github.com/youruser/yourrepo/actions
 
