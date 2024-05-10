@@ -1,0 +1,47 @@
+# Pull an image from docker hub, pull the docker-compose.yml from github,
+# run docker compose,
+# and clean unused docker elements.
+name: alt deploy, pull, run and clean
+
+on:
+  workflow_dispatch:
+
+jobs:
+  pull_and_run:
+    runs-on: [self-hosted, production]
+    steps:
+      # Login to docker hub to be able to pull private images.
+      - name: Login to DockerHub
+        run: docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+
+      #Pull the docker backend and frontend images, so that docker compose up wont fail even if they are private.
+      - name: Pull images
+        #If you need to access a private github repository create a github access token use checkout or create an access token and modify wget like this:
+        #wget -O docker-compose.yml --header="Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://raw.githubusercontent.com/<username>/<repo>/<branch>/docker-compose.yml 
+        #If you are on a private dockehrub repository it might be possible to comment pull, and login to docker hub. since docker compose will automatically pull
+        run: |
+          docker pull ${{ vars.DOCKERHUB_REPOSITORY_BACKEND }}:${{ github.sha }}
+          docker pull ${{ vars.DOCKERHUB_REPOSITORY_FRONTEND }}:${{ github.sha }}
+
+      #Checkout (copy) only docker-compose.yml into worker's folder. See https://github.com/actions/checkout .
+      - name: Copy docker Compose
+        uses: actions/checkout@v4
+        with:
+          sparse-chekout:
+            docker-compose.yml
+          sparse-checkout-cone-mode: false
+
+      - name: Run docker compose
+        run: |
+          docker compose up -d
+
+      - name: Clean up unnecesary docker files
+      # This step might seem trivial, or even wasteful, but space used by docker can easily get out of hand and on the cloud its costly.
+      # Feel free to remove it, but i discourage it.
+      # Remove all stoped containers, all images which are not refrenced by any containers, and all unused docker networks.
+      # Note how we dont run docker volume prune since it would be dangerous: if a container crashed and the volume was unused we could delete important information
+        run: |
+          docker container prune
+          docker image prune
+          docker network prune
+          
