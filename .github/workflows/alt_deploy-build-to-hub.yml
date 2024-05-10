@@ -29,8 +29,8 @@ jobs:
       - name: Build and push Docker image
         # build and push to the dockerhub  your_name/backend_repo_name or frontend_repo_name:github.sha which reflects the commit.
         run: |
-            docker build -t ${{ vars.DOCKERHUB_REPOSITORY_BACKEND }}:${{ github.sha }} ./backend
-            docker build -t ${{ vars.DOCKERHUB_REPOSITORY_FRONTEND }}:${{ github.sha }} ./frontend
+            docker build -t ${{ vars.DOCKERHUB_REPOSITORY_BACKEND }}:${{ github.sha }} -t ${{ vars.DOCKERHUB_REPOSITORY_BACKEND }}:latest ./backend
+            docker build -t ${{ vars.DOCKERHUB_REPOSITORY_FRONTEND }}:${{ github.sha }} -t ${{ vars.DOCKERHUB_REPOSITORY_FRONTEND }}:latest ./frontend
             docker push ${{ vars.DOCKERHUB_REPOSITORY_BACKEND }}:${{ github.sha }}
             docker push ${{ vars.DOCKERHUB_REPOSITORY_FRONTEND }}:${{ github.sha }}
 
