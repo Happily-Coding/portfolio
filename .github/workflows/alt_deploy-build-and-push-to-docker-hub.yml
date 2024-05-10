@@ -2,7 +2,7 @@
 # Instead of building and running on the vm, it builds on github actions
 # And then only copies the image to the vm
 # Its meant to diminish the workload on the vm which was generating timeout errors.
-name: Build and Push to Docker Hub workflow.
+name: build and push to docker hub
 
 on:
   release:
