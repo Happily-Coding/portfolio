@@ -65,7 +65,7 @@ You need 2 records:
 - An A (address) record with your domain host pointing to the Public IP of your vm.
 - A cname record with all subdomains as source (*) and your domain as target.
 
-On porkbun there are 2 default records, scroll to the bottom of the page to find them and mofiying, they should look like this but with your domain and ip. Dont forget to hit the sabe button nex tto each record.
+On porkbun there are 2 default records, scroll to the bottom of the page to find them and mofiying, they should look like this but with your domain and ip. Dont forget to hit the save button nex tto each record.
 ![Porkbun DNS Records](img/dns-records.png)
 
 Now, your domain will still not be working, since your vm is not doing anything, and since the DNS server doesn't instantaniously update. TTL is the time till update (max), in porkbun its 600s minimun (10 minutes), but on your dns server it may be longer.
@@ -248,11 +248,17 @@ sudo su # to enter super user mode`
 ```docker compose attach frontend``` or whatever service name.
 If you need to exit that command line just run exit.
 
+Dont forget to shutdown docker compose before going for ci. Otherwise you might try to run both at once which will lead to issues.
+cd /root/code/project-compose/
+docker compose down
+
+I should (and probably will)  change this guide to place the docker compose manually on the same place github actions will place it, to avoid any potential issues and unnecesary files.
+
 
 
 Now lets set things up so they are automatically deployed instead! Not bad huh?
 Again, we'll follow [the guide](https://github.com/tiangolo/full-stack-fastapi-template/blob/master/deployment.md#continuous-deployment-cd), but with some modifications:
-First execute these commands:
+First execute these commands. The point is to create a user in your vm so we can install the runners there.
 ```bash
 # add the user with useradd instead of adduser, use sudo or the command wont be found
 sudo useradd -m github
@@ -267,23 +273,28 @@ sudo su - github
 cd
 ```
 
+To find that folder as root, simply do cd home/github . To see the folder where workers will place files by default do cd home/github/_work
+
 Now we need to do some things on your github repository. Make sure to create a github repository for the project, and locally add it as a remote to push to. You can do it very simply on vs code by using the git symbol on and then push to, add remote.
 
-Now you need to go to your repo settings (on actions, runners, linux, x64) and copy paste the commands to create a github runner, which you can host on the vm.
+Now you need to go to your repo settings (on actions, runners, linux, x64) and copy paste the commands to your vm console to install a github runner on your vm, so we can run it.
 https://github.com/your-user/your-repo/settings/actions/runners/new?arch=x64&os=linux
 
 Feel free to use the default settings whenever pronted to do so, but you may want to add a label for production, and may want to skip the actual running.
 
+_work folder is default
 The runner is almost operational, but we need to make it run as a service so its never offline.
 Go back to the vm. Run ```exit``` to go back to the root user. 
 
 run:
 ```bash
-cd /home/github/actions-runner
+cd /home/github
 sudo ./svc.sh install github
 sudo ./svc.sh start
 ```
 Now it should be operational, you can check it on github.com/yourname/yourproject/settings/actions/runners
+You can also run:
+sudo ./svc.sh status
 
 Now we also need to configure the secrets in the github repository:
 Go to 
@@ -317,6 +328,7 @@ Also create a repository on dockerhub for the backend of this project, and anoth
 Ok, now download from this repository/.github the workflows starting with alt_ . They are the alternative workflows with the process i described.
 
 Commit and push the workflows to the correct remote.** Make sure NOT to push .env and .copier-answers.yml . It will leak security information if your repo is public!**
+I believe the reason that they might have not gitignored .env is to make it available with the github checkout workflow, but it could be done with actions and github secrets, and in my opinion thats a better approach and what i followed.
 
 You can see that on the workflows that ran with your CI/CD at https://github.com/youruser/yourrepo/actions
 
@@ -340,7 +352,7 @@ Creating a new release on github will run the following workflows:
 cd /home/github/actions-runner
 sudo ./svc.sh start
 ```
-- If ssh connection fails, your vm may be not responding
+- If ssh connection fails, your vm may be not responding, try restarting the vm and it will automatically restart the runner.
 
 # Workflow fails (TODO expand)
 First go to the workflow logs on github actions, then you can also see: https://docs.github.com/en/actions/hosting-your-own-runners/managing-self-hosted-runners/monitoring-and-troubleshooting-self-hosted-runners
@@ -349,5 +361,5 @@ You can also disable the workflow temporairly if you need the rest of the workfl
 
 # VM not responding
 - A problem during the run of a runner may cause your runnner to become inactive and your vm to stop responding to ssh.
-- If your vm starts responding you can try shutting it down, and starting it again, this may fix the issue. Connect via ssh to verify if it did. Do not forget to restart your runner and your traefik server since they'll both be shutdown.
+- If your vm starts responding you can try shutting it down, and starting it again, this may fix the issue. Connect via ssh to verify if it did. Do not forget to restart your traefik server since it'll be shutdown.
 
