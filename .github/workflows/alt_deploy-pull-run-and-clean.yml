@@ -14,40 +14,41 @@ jobs:
   pull_and_run:
     runs-on: [self-hosted, production]
     #Set environmental variables, keep in mind that they will not available by default inside the docker files, unless docker compose assigns them on environment
-    env:
+    # env:
       #General
-      ENVIRONMENT: production
-      DOMAIN: ${{ secrets.DOMAIN_PRODUCTION }}
-      PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
-      STACK_NAME: ${{ secrets.STACK_NAME_PRODUCTION }}
-      #This may be and likely is totally wrong TODO CHANGE:
-      BACKEND_CORS_ORIGINS: ${{ secrets.BACKEND_CORS_ORIGINS }}
+      # ENVIRONMENT: production
+      # DOMAIN: ${{ secrets.DOMAIN_PRODUCTION }}
+      # PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
+      # STACK_NAME: ${{ secrets.STACK_NAME_PRODUCTION }}
+      # #This may be and likely is totally wrong TODO CHANGE:
+      # BACKEND_CORS_ORIGINS: ${{ secrets.BACKEND_CORS_ORIGINS }}
 
-      SECRET_KEY: ${{ secrets.SECRET_KEY }}
-      FIRST_SUPERUSER: ${{ secrets.FIRST_SUPERUSER }}
-      FIRST_SUPERUSER_PASSWORD: ${{ secrets.FIRST_SUPERUSER_PASSWORD }}
-      USERS_OPEN_REGISTRATION: ${{ secrets.USERS_OPEN_REGISTRATION }}
+      # SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      # FIRST_SUPERUSER: ${{ secrets.FIRST_SUPERUSER }}
+      # FIRST_SUPERUSER_PASSWORD: ${{ secrets.FIRST_SUPERUSER_PASSWORD }}
+      # USERS_OPEN_REGISTRATION: ${{ secrets.USERS_OPEN_REGISTRATION }}
 
-      #Emails
-      SMTP_HOST: ${{ secrets.SMTP_HOST }}
-      SMTP_USER: ${{ secrets.SMTP_USER }}
-      SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-      EMAILS_FROM_EMAIL: ${{ secrets.EMAILS_FROM_EMAIL }}
+      # #Emails
+      # SMTP_HOST: ${{ secrets.SMTP_HOST }}
+      # SMTP_USER: ${{ secrets.SMTP_USER }}
+      # SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+      # EMAILS_FROM_EMAIL: ${{ secrets.EMAILS_FROM_EMAIL }}
 
-      #Postgres
-      POSTGRES_SERVER: ${{ secrets.POSTGRES_SERVER }}
-      POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
-      POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      # #Postgres
+      # POSTGRES_SERVER: ${{ secrets.POSTGRES_SERVER }}
+      # POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
+      # POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+      # POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+      # POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
 
-      SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+      # SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
 
-      #For docker compose
-      DOCKER_IMAGE_BACKEND: ${{ vars.DOCKERHUB_REPOSITORY_BACKEND }}
-      DOCKER_IMAGE_FRONTEND: ${{ vars.DOCKERHUB_REPOSITORY_FRONTEND }}
+      # #For docker compose
+      # DOCKER_IMAGE_BACKEND: ${{ vars.DOCKERHUB_REPOSITORY_BACKEND }}
+      # DOCKER_IMAGE_FRONTEND: ${{ vars.DOCKERHUB_REPOSITORY_FRONTEND }}
     # Keep in mind i ntheory manually exported variables may not be automatically available to Docker Compose.
     # You would need to manually pass these variables to Docker Compose using the -e option or include them in your .env file or environment section of your docker-compose.yml file.
+
     steps:
       # Login to docker hub to be able to pull private images.
       - name: Login to DockerHub
@@ -118,7 +119,30 @@ jobs:
       - name: Run docker compose
         # Try to run docker compose. If an image is missing, error instead of trying to build.
         run: |
-          docker compose -f docker-compose.yml up -d --no-build
+          docker compose -f docker-compose.yml up -d --no-build -e "$(cat << EOF
+          ENVIRONMENT=production
+          DOMAIN=${{ secrets.DOMAIN_PRODUCTION }}
+          PROJECT_NAME=${{ secrets.PROJECT_NAME }}
+          STACK_NAME=${{ secrets.STACK_NAME_PRODUCTION }}
+          BACKEND_CORS_ORIGINS=${{ secrets.BACKEND_CORS_ORIGINS }}
+          SECRET_KEY=${{ secrets.SECRET_KEY }}
+          FIRST_SUPERUSER=${{ secrets.FIRST_SUPERUSER }}
+          FIRST_SUPERUSER_PASSWORD=${{ secrets.FIRST_SUPERUSER_PASSWORD }}
+          USERS_OPEN_REGISTRATION=${{ secrets.USERS_OPEN_REGISTRATION }}
+          SMTP_HOST=${{ secrets.SMTP_HOST }}
+          SMTP_USER=${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
+          EMAILS_FROM_EMAIL=${{ secrets.EMAILS_FROM_EMAIL }}
+          POSTGRES_SERVER=${{ secrets.POSTGRES_SERVER }}
+          POSTGRES_PORT=${{ secrets.POSTGRES_PORT }}
+          POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          SENTRY_DSN=${{ secrets.SENTRY_DSN }}
+          DOCKER_IMAGE_BACKEND=${{ vars.DOCKERHUB_REPOSITORY_BACKEND }}
+          DOCKER_IMAGE_FRONTEND=${{ vars.DOCKERHUB_REPOSITORY_FRONTEND }}
+          EOF
+          )"
 
       - name: Announce container status
       # Try to run docker compose. If an image is missing, error instead of trying to build.
@@ -127,13 +151,13 @@ jobs:
           docker compose -f docker-compose.yml logs
 
       #There seemed to be an issue with the containers, and i think it may be because of missing env variables, issue which was hidden by providing a full .env file
-      - name: Check environment status
+      #- name: Check environment status
         # Try to run docker compose. If an image is missing, error instead of trying to build.
-        run: |
-          echo $environment
-          export environment production
-          echo $environmennt
-          docker compose -f docker-compose.yml logs
+      #  run: |
+      #    echo $environment
+      #    export environment production
+      #    echo $environmennt
+      #    docker compose -f docker-compose.yml logs
 
       - name: Clean up unnecesary docker files
       # This step might seem trivial, or even wasteful, but space used by docker can easily get out of hand and on the cloud its costly.
