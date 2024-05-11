@@ -78,7 +78,6 @@ jobs:
           DOCKER_IMAGE_BACKEND=${{ vars.DOCKERHUB_REPOSITORY_BACKEND }} \
           DOCKER_IMAGE_FRONTEND=${{ vars.DOCKERHUB_REPOSITORY_FRONTEND }} \
           docker compose -f docker-compose.yml up -d --no-build
-          )"
 
       - name: Announce container status
         run: |
