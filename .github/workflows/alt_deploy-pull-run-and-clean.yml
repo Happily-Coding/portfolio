@@ -81,6 +81,8 @@ jobs:
 
       - name: Announce container status
         run: |
+          DOCKER_IMAGE_BACKEND=${{ vars.DOCKERHUB_REPOSITORY_BACKEND }} \
+          DOCKER_IMAGE_FRONTEND=${{ vars.DOCKERHUB_REPOSITORY_FRONTEND }} \
           docker compose -f docker-compose.yml ps
       #docker compose -f docker-compose.yml logs 
       #Dont call logs, while its comfortable to call it here,
@@ -102,6 +104,8 @@ jobs:
       # Note how we dont run docker volume prune since it would be dangerous: if a container crashed and the volume was unused we could delete important information
       # -f makes each prune happen without asking for confirmation
         run: |
+          DOCKER_IMAGE_BACKEND=${{ vars.DOCKERHUB_REPOSITORY_BACKEND }} \
+          DOCKER_IMAGE_FRONTEND=${{ vars.DOCKERHUB_REPOSITORY_FRONTEND }} \
           docker container prune -f
           docker image prune -f
           docker network prune -f
