@@ -37,65 +37,50 @@ jobs:
       
       # The env file is looked for by docker compose. Its used to share variables amongst multiple services.
       # Any content it held would be overriden by any variables set in environment inside docker compose, or passed by command
-      - name: Create placeholder .env file
-        run: |
-          echo > .env
-          
+      # It is necessary for it to contain all variables used by docker compose, because any commands will attempt to validate the presence of those variables
+      # This means that we couldnt run commands to diagnose or down docker compose if the env variables arent present,
+      # and even variables exported here would be unavailable in the vms command console, so using just docker compose this is pretty much our only choice.
+      # Please note that storing variables like this isnt very safe, but to store them differently needs code refactoring.
+      # to either use docker swarm or a secrets vault, that is later injected into compose in some way
       - name: Create .env
-        #to import  variables that arent manually imported into docker compose's enviroment, otherwise they wouldnt be set.
-        #any variables that are manually imported in the environment section are instead passed by command since its a bit safer. 
         run: |
           cat << EOF >> .env
           #General
           PROJECT_NAME=${{ secrets.PROJECT_NAME }}
+          STACK_NAME=${{ secrets.STACK_NAME_PRODUCTION }}
+          DOCKER_IMAGE_BACKEND=${{ vars.DOCKERHUB_REPOSITORY_BACKEND }}
+          DOCKER_IMAGE_FRONTEND=${{ vars.DOCKERHUB_REPOSITORY_FRONTEND }}
+          ENVIRONMENT=production
+          DOMAIN=${{ secrets.DOMAIN_PRODUCTION }}
+          BACKEND_CORS_ORIGINS=${{ secrets.BACKEND_CORS_ORIGINS }}
+          SECRET_KEY=${{ secrets.SECRET_KEY }}
+          FIRST_SUPERUSER=${{ secrets.FIRST_SUPERUSER }}
+          FIRST_SUPERUSER_PASSWORD=${{ secrets.FIRST_SUPERUSER_PASSWORD }}
+          USERS_OPEN_REGISTRATION=${{ secrets.USERS_OPEN_REGISTRATION }}
+          SENTRY_DSN=${{ secrets.SENTRY_DSN }}
+          
+          #Emails
+          SMTP_HOST=${{ secrets.SMTP_HOST }}
+          SMTP_USER=${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
+          EMAILS_FROM_EMAIL=${{ secrets.EMAILS_FROM_EMAIL }}
+          
+          #Postgres
+          POSTGRES_SERVER=${{ secrets.POSTGRES_SERVER }}
+          POSTGRES_PORT=${{ secrets.POSTGRES_PORT }}
+          POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
           EOF
       
 
       - name: Run docker compose
-        # Set environmental variables only for this command: Run docker compose.
-        # Any variables listed here can be assigned inside docker-compose.yml to make them accesible to a service.
-        # If an image is missing, throw an error instead of trying to build, since the image should've been pulled.
         run: |
-          ENVIRONMENT=production \
-          DOMAIN=${{ secrets.DOMAIN_PRODUCTION }} \
-          PROJECT_NAME=${{ secrets.PROJECT_NAME }} \
-          STACK_NAME=${{ secrets.STACK_NAME_PRODUCTION }} \
-          BACKEND_CORS_ORIGINS=${{ secrets.BACKEND_CORS_ORIGINS }} \
-          SECRET_KEY=${{ secrets.SECRET_KEY }} \
-          FIRST_SUPERUSER=${{ secrets.FIRST_SUPERUSER }} \
-          FIRST_SUPERUSER_PASSWORD=${{ secrets.FIRST_SUPERUSER_PASSWORD }} \
-          USERS_OPEN_REGISTRATION=${{ secrets.USERS_OPEN_REGISTRATION }} \
-          SMTP_HOST=${{ secrets.SMTP_HOST }} \
-          SMTP_USER=${{ secrets.SMTP_USER }} \
-          SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }} \
-          EMAILS_FROM_EMAIL=${{ secrets.EMAILS_FROM_EMAIL }} \
-          POSTGRES_SERVER=${{ secrets.POSTGRES_SERVER }} \
-          POSTGRES_PORT=${{ secrets.POSTGRES_PORT }} \
-          POSTGRES_DB=${{ secrets.POSTGRES_DB }} \
-          POSTGRES_USER=${{ secrets.POSTGRES_USER }} \
-          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
-          SENTRY_DSN=${{ secrets.SENTRY_DSN }} \
-          DOCKER_IMAGE_BACKEND=${{ vars.DOCKERHUB_REPOSITORY_BACKEND }} \
-          DOCKER_IMAGE_FRONTEND=${{ vars.DOCKERHUB_REPOSITORY_FRONTEND }} \
           docker compose -f docker-compose.yml up -d --no-build
 
       - name: Announce container status
         run: |
-          DOCKER_IMAGE_BACKEND=${{ vars.DOCKERHUB_REPOSITORY_BACKEND }} \
-          DOCKER_IMAGE_FRONTEND=${{ vars.DOCKERHUB_REPOSITORY_FRONTEND }} \
-          docker compose -f docker-compose.yml ps
-      #docker compose -f docker-compose.yml logs 
-      #Dont call logs, while its comfortable to call it here,
-      #It could expose security info into version control
-
-      #There seemed to be an issue with the containers, and i think it may be because of missing env variables, issue which was hidden by providing a full .env file
-      #- name: Check environment status
-        # Try to run docker compose. If an image is missing, error instead of trying to build.
-      #  run: |
-      #    echo $environment
-      #    export environment production
-      #    echo $environmennt
-      #    docker compose -f docker-compose.yml logs
+          docker compose ps
 
       - name: Clean up unnecesary docker files
       # This step might seem trivial, or even wasteful, but space used by docker can easily get out of hand and on the cloud its costly.
@@ -104,8 +89,6 @@ jobs:
       # Note how we dont run docker volume prune since it would be dangerous: if a container crashed and the volume was unused we could delete important information
       # -f makes each prune happen without asking for confirmation
         run: |
-          DOCKER_IMAGE_BACKEND=${{ vars.DOCKERHUB_REPOSITORY_BACKEND }} \
-          DOCKER_IMAGE_FRONTEND=${{ vars.DOCKERHUB_REPOSITORY_FRONTEND }} \
           docker container prune -f
           docker image prune -f
           docker network prune -f
