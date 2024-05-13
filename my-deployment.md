@@ -273,7 +273,7 @@ sudo su - github
 cd
 ```
 
-To find that folder as root, simply do cd home/github . To see the folder where workers will place files by default do cd home/github/_work
+To find that folder as root, simply do cd home/github . To see the folder where workers will place files by default do cd /home/github/_work
 
 Now we need to do some things on your github repository. Make sure to create a github repository for the project, and locally add it as a remote to push to. You can do it very simply on vs code by using the git symbol on and then push to, add remote.
 
@@ -335,14 +335,15 @@ You can see that on the workflows that ran with your CI/CD at https://github.com
 
 Our current github actions settings will run the following workflows on commit:
 - Test
-- Deploy to staging 
+- Deploy to staging - Deploy to Production
 - Smokeshow
 Keep in mind they may not be instantaniously ran, but instead queued.
 
 Creating a new release on github will run the following workflows:
-- Deploy to Production
 - Build and push to docker hub.
 
+On sucesfull push:
+- Pull run and clean
 
 # Debugging
 # Github workflows are queued/ runner is inactive
