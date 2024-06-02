@@ -1,15 +1,30 @@
-# Disclaimer
-This file is a work in progress. Its my first time deploying the template, and I haven't finished yet, therefore there might be errors in it.
+# Deploying a new version
+This project has been sucessfully deployed and can be found at salvio.me
 
-# About the structure of the project 
+To deploy a new version:
+- Modify the code
+- Push to github
+- Create a new release (github actions will take care of the rest)
+
+# Deploying a similar project from scratch:
+## Intro
+- This project was built starting from [Tiangolo's Full Stack FastAPI Template](https://github.com/tiangolo/full-stack-fastapi-template).
+- The template is interesting but it's deployment instructions aren't detailed, and use AWS which isn't permanently free. 
+- Therefore, I've deployed this project using GCP free tier, and have created precise instructions on how you can do the same.
+
+### Disclaimer
+I was able to deploy my project, and is currently working without issues, **BUT I'm no expert in deployment or full stack development and deploying a project comes with great responsability**, since it comes with risks, for example, you could expose your organization to security vulnerabilities, or financial costs.  **Please make sure to be careful during the process and properly research the precautions and considerations to follow every step of the way** 
+
+
+### About the structure of the project 
 docker-compose.override.yml is used used only for local development - local deployment. 
 For example, the directory with the backend code is mounted as a Docker "host volume", mapping the code you change live to the directory inside the container. That allows you to test your changes right away, without having to build the Docker image again.
 
-# Intro
+# Building a new project like this one
+Before deploying a similar project you first need to build it. 
 
-This project is based on https://github.com/tiangolo/full-stack-fastapi-template
-
-Steps to build a project like this one:
+This project is based on https://github.com/tiangolo/full-stack-fastapi-template . 
+To build a new project like this one:
 1. Install copier locally if not installed:
 ``` pip install copier ```
 
@@ -251,10 +266,6 @@ If you need to exit that command line just run exit.
 Dont forget to shutdown docker compose before going for ci. Otherwise you might try to run both at once which will lead to issues.
 cd /root/code/project-compose/
 docker compose down
-
-I should (and probably will)  change this guide to place the docker compose manually on the same place github actions will place it, to avoid any potential issues and unnecesary files.
-
-
 
 Now lets set things up so they are automatically deployed instead! Not bad huh?
 Again, we'll follow [the guide](https://github.com/tiangolo/full-stack-fastapi-template/blob/master/deployment.md#continuous-deployment-cd), but with some modifications:
